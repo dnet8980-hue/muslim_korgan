@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Иман Серігі — Super App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Amiri&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1b4332;
+            --gold: #d4af37;
+            --white: #ffffff;
+            --bg: #f0f2f5;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            margin: 0; padding: 0;
+            background: #121212;
+            color: #333;
+        }
+
+        .container { max-width: 800px; margin: 0 auto; padding: 15px; background: var(--bg); min-height: 100vh; }
+
+        header {
+            background: var(--primary); color: white;
+            padding: 30px; border-radius: 0 0 30px 30px;
+            text-align: center; margin-bottom: 20px;
+        }
+
+        section {
+            background: white; border-radius: 20px;
+            padding: 20px; margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-top: 5px solid var(--gold);
+        }
+
+        h2 { color: var(--primary); font-size: 20px; display: flex; align-items: center; gap: 10px; }
+
+        /* МЕНЮ СТИЛЬ (99 есім, Айлар, Сүрелер үшін) */
+        .menu-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px; max-height: 300px; overflow-y: auto;
+            padding: 10px; background: #f9f9f9; border-radius: 10px;
+        }
+        .menu-item {
+            background: white; padding: 10px; border-radius: 8px;
+            text-align: center; font-size: 11px; border: 1px solid #ddd;
+            cursor: pointer; transition: 0.2s;
+        }
+        .menu-item:hover { background: var(--gold); color: white; }
+
+        /* ОЙЫН СТИЛЬ */
+        .quiz-box { background: var(--primary); color: white; padding: 20px; border-radius: 15px; text-align: center; }
+        .quiz-option {
+            background: white; color: var(--primary);
+            border: none; padding: 12px; width: 100%;
+            margin: 8px 0; border-radius: 10px; font-weight: bold; cursor: pointer;
+        }
+
+        /* ЗІКІР */
+        .tasbih-area { text-align: center; padding: 20px; background: #e8f5e9; border-radius: 20px; }
+        .counter-num { font-size: 60px; font-weight: 800; color: var(--primary); }
+        .main-btn {
+            background: var(--gold); border: none; padding: 20px;
+            width: 100%; border-radius: 15px; color: var(--primary);
+            font-weight: 800; font-size: 20px; cursor: pointer;
+        }
+
+        .info-card { background: #fff8e1; padding: 15px; border-radius: 10px; font-size: 13px; margin-top: 10px; border-left: 4px solid var(--gold); }
+        
+        .arabic { font-family: 'Amiri', serif; font-size: 24px; text-align: right; display: block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🕌 Иман Серігі</h1>
+        <p id="clock"></p>
+    </header>
+
+    <section>
+        <h2>🎮 Иман Ойыны (Quiz)</h2>
+        <div class="quiz-box" id="quizContainer">
+            <p id="quizQuestion">Жүктелуде...</p>
+            <div id="quizOptions"></div>
+            <p id="quizScore" style="margin-top:10px; font-size:12px;"></p>
+        </div>
+        <div class="info-card"><b>Разбор:</b> Бұл ойын діни біліміңізді тексеруге және есте сақтау қабілетін арттыруға арналған.</div>
+    </section>
+
+    <section>
+        <h2>✨ Алланың 99 есімі</h2>
+        <div class="menu-grid" id="namesList"></div>
+        <div class="info-card"><b>Разбор:</b> Алланың есімдерін жаттау — жәннатқа жетелейтін қайырлы амал.</div>
+    </section>
+    <section id="quranReader">
+    <h2>📖 Құран Оқу (114 Сүре)</h2>
+    
+    <div class="menu-grid" id="quranSuraMenu" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; max-height: 200px; overflow-y: auto;">
+        </div>
+
+    <div id="suraDisplay" style="display:none; margin-top: 20px; padding: 15px; background: #fff; border-radius: 15px; border: 1px solid var(--gold);">
+        <h3 id="suraTitle" style="text-align: center; color: var(--primary);"></h3>
+        <hr>
+        <div id="suraContent" style="max-height: 400px; overflow-y: auto; padding: 10px;">
+            </div>
+        <button onclick="closeSura()" style="width: 100%; margin-top: 10px; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer;">Жабу</button>
+    </div>
+</section>
+
+<script>
+// 114 Сүре атаулары (үлгі ретінде алғашқылары)
+const suraNames = [
+    "Фатиха", "Бақара", "Әли Имран", "Ниса", "Мәида", "Әнғам", "Ағраф", "Әнфәл", "Тәубе", "Юнус",
+    "Һұд", "Юсуф", "Рағыд", "Ибраһим", "Хижр", "Нәхл", "Исра", "Кәһф", "Мәриям", "Таһа"
+    // API қолданғанда қалғандары нөмірмен автоматты шығады
+];
+
+const quranMenu = document.getElementById('quranSuraMenu');
+
+// Менюді толтыру (114 сүре)
+for (let i = 1; i <= 114; i++) {
+    const btn = document.createElement('div');
+    btn.className = 'menu-item';
+    btn.innerHTML = `<b>${i}</b><br>${suraNames[i-1] || 'Сүре'}`;
+    btn.onclick = () => loadSura(i, suraNames[i-1] || `Сүре ${i}`);
+    quranMenu.appendChild(btn);
+}
+
+// Сүрені API арқылы жүктеу функциясы
+async function loadSura(id, name) {
+    const contentDiv = document.getElementById('suraContent');
+    const display = document.getElementById('suraDisplay');
+    const title = document.getElementById('suraTitle');
+    
+    title.innerText = "Жүктелуде...";
+    contentDiv.innerHTML = "Күте тұрыңыз, аяттар алдырылуда...";
+    display.style.display = "block";
+    quranMenu.style.display = "none"; // Менюді уақытша жабу
+
+    try {
+        // Тегін Quran API қолданамыз (Арабша мәтін үшін)
+        const response = await fetch(`https://api.alquran.cloud/v1/surah/${id}`);
+        const data = await response.json();
+        
+        title.innerText = `${id}. ${name}`;
+        contentDiv.innerHTML = "";
+
+        data.data.ayahs.forEach(ayah => {
+            const p = document.createElement('div');
+            p.style.marginBottom = "20px";
+            p.innerHTML = `
+                <span class="arabic" style="font-size: 22px; display: block; margin-bottom: 5px;">${ayah.text}</span>
+                <small style="color: var(--gold);">[${id}:${ayah.numberInSurah}]</small>
+            `;
+            contentDiv.appendChild(p);
+        });
+    } catch (error) {
+        contentDiv.innerHTML = "Қате орын алды. Интернет байланысын тексеріңіз.";
+    }
+}
+
+function closeSura() {
+    document.getElementById('suraDisplay').style.display = "none";
+    document.getElementById('quranSuraMenu').style.display = "grid";
+}
+</script>
+
+    <section>
+        <h2>📿 Зікір Санағыш</h2>
+        <div class="tasbih-area">
+            <p id="zikrName" style="font-weight:bold; color:var(--primary)">Субханаллаһ</p>
+            <div class="counter-num" id="countDisp">0</div>
+            <button class="main-btn" onclick="hitTasbih()">БАСУ</button>
+            <small onclick="resetTasbih()" style="cursor:pointer; display:block; margin-top:10px;">Санақты нөлдеу</small>
+        </div>
+        <div class="info-card"><b>Разбор:</b> 41 түрлі зікір мен салауат кезекпен шығады. Әр зікір 33 реттен орындалады.</div>
+    </section>
+
+    <section>
+        <h2>📖 Құран сүрелері (114 сүре)</h2>
+        <div class="menu-grid" id="quranList"></div>
+        <div class="info-card"><b>Разбор:</b> Құранда 114 сүре, 6236 аят бар. Алғашқы сүре - Фатиха, соңғысы - Нас.</div>
+    </section>
+
+    <section>
+        <h2>📅 Ислам күнтізбесі (12 ай)</h2>
+        <div class="menu-grid" id="monthsList"></div>
+        <div class="info-card"><b>Разбор:</b> Мұсылман күнтізбесі ай фазаларына негізделген (Хижри).</div>
+    </section>
+
+    <section>
+        <h2>🤲 Күнделікті дұғалар мен Рамазан</h2>
+        <div class="card" style="border:1px solid #ddd; padding:15px; border-radius:15px; margin-bottom:10px;">
+            <b>Тамақ алдында:</b> <span class="arabic">بِسْمِ اللَّهِ</span>
+        </div>
+        <div class="card" style="border:1px solid #ddd; padding:15px; border-radius:15px; margin-bottom:10px;">
+            <b>Рамазан (Ниет):</b> <p>Алла ризалығы үшін таңнан күн батқанға дейін ораза ұстауға ниет еттім.</p>
+        </div>
+        <div class="info-card"><b>Разбор:</b> Дұға — мұсылманның қаруы. Рамазан — нәпсіні тәрбиелейтін қасиетті ай.</div>
+    </section>
+
+    <div class="footer">©️ 2026 Иман Серігі. Барлық құқықтар қорғалған.</div>
+</div>
+
+<script>
+    // Сағат
+    setInterval(() => {
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString('kk-KZ');
+    }, 1000);
+
+    // Алланың 99 есімі (мысал)
+    const asmaulHusna = ["Ар-Рахман", "Ар-Рахим", "Аль-Малик", "Аль-Куддус", "Ас-Салам", "Аль-Мумин", "Аль-Мухаймин", "Аль-Азиз", "Аль-Джаббар", "Аль-Мутакаббир"];
+    const namesDiv = document.getElementById('namesList');
+    for(let i=1; i<=99; i++) {
+        namesDiv.innerHTML += `<div class="menu-item"><b>${i}</b><br>${asmaulHusna[i-1] || "Алла есімі"}</div>`;
+    }
+
+    // 114 сүре тізімі
+    const quranDiv = document.getElementById('quranList');
+    const sures = ["Фатиха", "Бақара", "Әли Имран", "Ниса", "Мәида", "Әнғам", "Ағраф"];
+    for(let i=1; i<=114; i++) {
+        quranDiv.innerHTML += `<div class="menu-item">${i}. ${sures[i-1] || "Сүре"}</div>`;
+    }
+
+    // 12 ай
+    const months = ["Мұхаррам", "Сафар", "Рабиүл-әууәл", "Рабиүл-ахир", "Жұмадәл-әууәл", "Жұмадәл-ахир", "Ережеп", "Шағбан", "Рамазан", "Шәууәл", "Зул-қағда", "Зул-хижжа"];
+    const monthsDiv = document.getElementById('monthsList');
+    months.forEach((m, i) => {
+        monthsDiv.innerHTML += `<div class="menu-item"><b>${i+1}</b><br>${m}</div>`;
+    });
+
+    // ЗІКІР ЛОГИКАСЫ (41 түрлі, 33-тен)
+    let count = 0;
+    let zIndex = 0;
+    const zikrs = ["Субханаллаһ", "Әлһамдулилләһ", "Аллаһу Акбар", "Лә иләһа илләллаһ", "Астағфируллаһ", "Салауат"];
+    
+    function hitTasbih() {
+        count++;
+        if(count > 33) {
+            count = 1;
+            zIndex = (zIndex + 1) % zikrs.length;
+            document.getElementById('zikrName').innerText = zikrs[zIndex];
+        }
+        document.getElementById('countDisp').innerText = count;
+        if(navigator.vibrate) navigator.vibrate(50);
+    }
+    function resetTasbih() { count=0; document.getElementById('countDisp').innerText=0; }
+
+    // ОЙЫН (QUIZ) ЛОГИКАСЫ
+    const questions = [
+        { q: "Исламның неше шарты бар?", a: ["3", "5", "7"], c: 1 },
+        { q: "Құранның алғашқы сүресі?", a: ["Ықылас", "Фатиха", "Бақара"], c: 1 },
+        { q: "Зекет неше пайызбен беріледі?", a: ["2.5%", "5%", "10%"], c: 0 }
+    ];
+    let currentQ = 0;
+    function loadQuiz() {
+        const item = questions[currentQ];
+        document.getElementById('quizQuestion').innerText = item.q;
+        const optDiv = document.getElementById('quizOptions');
+        optDiv.innerHTML = '';
+        item.a.forEach((opt, idx) => {
+            optDiv.innerHTML += `<button class="quiz-option" onclick="checkQuiz(${idx})">${opt}</button>`;
+        });
+    }
+    function checkQuiz(idx) {
+        if(idx === questions[currentQ].c) alert("Дұрыс! ✅");
+        else alert("Қате! ❌");
+        currentQ = (currentQ + 1) % questions.length;
+        loadQuiz();
+    }
+    loadQuiz();
+</script>
+
+</body>
+</html>
+<section>
+<h2>🤲 Күнделікті дұғалар</h2>
+
+<div class="card">
+<b>Әжетханаға кірерде:</b>
+<span class="arabic">اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْخُبُثِ وَالْخَبَائِثِ</span>
+<p>Мағынасы: Алла, мені жамандықтардан сақта.</p>
+</div>
+
+<div class="card">
+<b>Әжетханадан шығарда:</b>
+<span class="arabic">غُفْرَانَكَ</span>
+</div>
+
+<div class="card">
+<b>Тамақ алдында:</b>
+<span class="arabic">بِسْمِ اللَّهِ</span>
+</div>
+
+<div class="card">
+<b>Тамақтан кейін:</b>
+<span class="arabic">
+الْحَمْدُ لِلَّهِ الَّذِي أَطْعَمَنِي هَذَا
+</span>
+</div>
+
+<div class="card">
+<b>Үйден шығарда:</b>
+<span class="arabic">
+بِسْمِ اللَّهِ تَوَكَّلْتُ عَلَى اللَّهِ
+</span>
+</div>
+
+<div class="card">
+<b>Жолға шығарда:</b>
+<span class="arabic">
+سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا
+</span>
+</div>
+
+<div class="card">
+<b>Ұйықтар алдында:</b>
+<span class="arabic">
+بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا
+</span>
+</div>
+
+<div class="card">
+<b>Оянғанда:</b>
+<span class="arabic">
+الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا
+</span>
+</div>
+
+<div class="info-card">
+<b>Разбор:</b> Бұл дұғалар күнделікті өмірді ғибадатқа айналдырады.
+</div>
+</section>
+<section>
+    <h2>💬 Сұрақ қой – жауап ал</h2>
+
+    <div style="background:white; padding:15px; border-radius:15px;">
+        <textarea id="userQuestion"
+            placeholder="Мысалы: Намаз неше уақыт? Зекет кімге беріледі?"
+            style="width:100%; height:80px; padding:12px; border-radius:10px; border:1px solid #ccc;"></textarea>
+
+        <button class="main-btn" onclick="answerQuestion()" style="margin-top:10px;">
+            Жауап алу
+        </button>
+
+        <div id="answerBox"
+            style="margin-top:15px; padding:15px; background:#f4f6f8;
+            border-radius:12px; display:none; font-size:14px;">
+        </div>
+    </div>
+
+    <div class="info-card">
+        <b>Разбор:</b> Мұнда өзіңізді қызықтырған діни сұрақты жазып, бірден жауап аласыз.
+    </div>
+</section>
+<script>
+function answerQuestion() {
+    const q = document.getElementById("userQuestion").value.toLowerCase();
+    const box = document.getElementById("answerBox");
+
+    if (!q.trim()) {
+        box.style.display = "block";
+        box.innerHTML = "❗ Сұрақ жазыңыз.";
+        return;
+    }
+
+    let answer = "Бұл сұрақ бойынша әзірге жауап табылмады.";
+
+    if (q.includes("ислам") && q.includes("шарт")) {
+        answer = "Исламның 5 шарты бар: иман, намаз, ораза, зекет, қажылық.";
+    }
+    else if (q.includes("намаз")) {
+        answer = "Намаз – мұсылманға парыз ғибадат. Күніне 5 уақыт оқылады.";
+    }
+    else if (q.includes("ораза")) {
+        answer = "Ораза – Рамазан айында таңнан күн батқанға дейін ұсталады.";
+    }
+    else if (q.includes("зекет")) {
+        answer = "Зекет – нисап мөлшерінен асқан мал-мүліктің 2.5%-ы.";
+    }
+    else if (q.includes("құран")) {
+        answer = "Құран – Алланың сөзі. 114 сүре, 6236 аяттан тұрады.";
+    }
+    else if (q.includes("пайғамбар")) {
+        answer = "Соңғы пайғамбар – Мұхаммед ﷺ.";
+    }
+    else if (q.includes("рамазан")) {
+        answer = "Рамазан – қасиетті ай, ораза парыз етілген.";
+    }
+
+    box.style.display = "block";
+    box.innerHTML = "🕌 <b>Жауап:</b><br>" + answer;
+}
+</script>
+<section>
+    <h2>🕌 Намаз қалай оқылады?</h2>
+
+    <div class="menu-grid" style="grid-template-columns: repeat(2, 1fr);">
+        <div class="menu-item" onclick="openNamaz('fard')">Парыз намаз</div>
+        <div class="menu-item" onclick="openNamaz('sunnah')">Сүннет намаз</div>
+    </div>
+
+    <div id="namazBox"
+        style="display:none; margin-top:20px; background:white; padding:20px;
+        border-radius:15px; border-top:5px solid var(--gold);">
+        
+        <h3 id="namazTitle" style="color:var(--primary); text-align:center;"></h3>
+        <div id="namazSteps"></div>
+
+        <button onclick="closeNamaz()"
+            style="margin-top:15px; width:100%; padding:12px;
+            background:var(--primary); color:white;
+            border:none; border-radius:10px;">
+            Жабу
+        </button>
+    </div>
+
+    <div class="info-card">
+        <b>Разбор:</b> Намаз – мұсылманның тірегі. Әр қимыл мен дұға өз орнымен оқылады.
+    </div>
+</section>
+<script>
+function openNamaz(type) {
+    const title = document.getElementById("namazTitle");
+    const steps = document.getElementById("namazSteps");
+    document.getElementById("namazBox").style.display = "block";
+
+    if (type === "fard") {
+        title.innerText = "Парыз намаздың оқылуы (2 ракағат үлгі)";
+        steps.innerHTML = `
+        <ol>
+            <li><b>Ниет:</b> Жүрекпен ниет ету.</li>
+
+            <li><b>Такбир:</b>
+                <span class="arabic">الله أكبر</span>
+            </li>
+
+            <li><b>Субханакә:</b>
+                <span class="arabic">
+                سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ
+                </span>
+            </li>
+
+            <li><b>Фатиха сүресі:</b>
+                <span class="arabic">
+                الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ
+                </span>
+            </li>
+
+            <li><b>Қосымша сүре:</b> (Ықылас т.б.)</li>
+
+            <li><b>Рукуғ:</b>
+                <span class="arabic">سُبْحَانَ رَبِّيَ الْعَظِيمِ</span>
+            </li>
+
+            <li><b>Сәжде:</b>
+                <span class="arabic">سُبْحَانَ رَبِّيَ الْأَعْلَى</span>
+            </li>
+
+            <li><b>Екінші ракағат:</b> Осы тәртіп қайталанады.</li>
+
+            <li><b>Әттахият:</b>
+                <span class="arabic">التَّحِيَّاتُ لِلَّهِ...</span>
+            </li>
+
+            <li><b>Салауат:</b>
+                <span class="arabic">اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ</span>
+            </li>
+
+            <li><b>Сәлем:</b>
+                <span class="arabic">السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللَّهِ</span>
+            </li>
+        </ol>`;
+    }
+
+    if (type === "sunnah") {
+        title.innerText = "Сүннет намаздың оқылуы";
+        steps.innerHTML = `
+        <ol>
+            <li>Ниет ету</li>
+            <li>Такбир – <span class="arabic">الله أكبر</span></li>
+            <li>Субханакә</li>
+            <li>Фатиха + сүре</li>
+            <li>Рукуғ → Сәжде</li>
+            <li>Әттахият → Салауат → Сәлем</li>
+        </ol>`;
+    }
+}
+
+function closeNamaz() {
+    document.getElementById("namazBox").style.display = "none";
+}
+</script>
+<section>
+    <h2>🌙 Рамазан айы</h2>
+
+    <div style="background:white; padding:15px; border-radius:15px;">
+        <p><b>Рамазан басталуы:</b> <span id="ramadanStart">Жүктелуде...</span></p>
+
+        <label>Қалаңызды таңдаңыз:</label>
+        <select id="citySelect" onchange="loadRamadanTimes()"
+            style="width:100%; padding:10px; border-radius:10px;">
+            <option value="Almaty">Алматы</option>
+            <option value="Astana">Астана</option>
+            <option value="Shymkent">Шымкент</option>
+            <option value="Atyrau">Атырау</option>
+        </select>
+
+        <div style="margin-top:15px;">
+            <p>🌅 <b>Ауыз бекіту (сәресі):</b> <span id="suhoor">--:--</span></p>
+            <p>🌇 <b>Ауыз ашу (ифтар):</b> <span id="iftar">--:--</span></p>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <b>Разбор:</b> Рамазан — ораза парыз етілген қасиетті ай.
+    </div>
+</section>
+<script>
+async function loadRamadanTimes() {
+    const city = document.getElementById("citySelect").value;
+
+    try {
+        const res = await fetch(
+            `https://api.aladhan.com/v1/timingsByCity?city=${city}&country=Kazakhstan&method=2`
+        );
+        const data = await res.json();
+
+        document.getElementById("suhoor").innerText = data.data.timings.Fajr;
+        document.getElementById("iftar").innerText = data.data.timings.Maghrib;
+    } catch {
+        document.getElementById("suhoor").innerText = "Қате";
+        document.getElementById("iftar").innerText = "Қате";
+    }
+}
+
+// Рамазан басталуы (үлгі, жылға қарай жаңартылады)
+document.getElementById("ramadanStart").innerText =
+    "Ай көрінуіне байланысты (шамамен наурыз)";
+loadRamadanTimes();
+</script>
+<section>
+    <h2>🤍 Салауат пен зікірлер</h2>
+
+    <div class="card">
+        <b>Салауат:</b>
+        <span class="arabic">
+        اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ
+        </span>
+        <p>
+        Алла Тағала Мұхаммедке ﷺ және оның әулетіне салауат жолдасын.
+        </p>
+    </div>
+
+    <div class="card">
+        <b>Кәлима (Лә иләһа иллаллаһ):</b>
+        <span class="arabic">
+        لَا إِلٰهَ إِلَّا اللَّهُ
+        </span>
+        <p>
+        Алладан басқа құдай жоқ.
+        </p>
+    </div>
+
+    <div class="card">
+        <b>Лә хаула уә лә қууата иллә билләһ:</b>
+        <span class="arabic">
+        لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ
+        </span>
+        <p>
+        Алланың көмегінсіз күш те, қуат та жоқ.
+        </p>
+    </div>
+
+    <div class="card">
+        <b>Кәлима Шаһадат:</b>
+        <span class="arabic">
+        أَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا اللَّهُ
+        </span>
+        <p>
+        Мен Алладан басқа құдай жоқ екеніне куәлік етемін.
+        </p>
+    </div>
+
+    <div class="info-card">
+        <b>Разбор:</b> Бұл зікірлер иманды күшейтіп, жүрекке тыныштық береді.
+    </div>
+</section>
+<section>
+    <h2>🌙 Рамазан күнтізбесі</h2>
+
+    <label><b>Қалаңызды таңдаңыз:</b></label>
+    <select id="ramadanCity" onchange="loadRamadanCalendar()"
+        style="width:100%; padding:10px; border-radius:10px; margin:10px 0;">
+        <option value="Almaty">Алматы</option>
+        <option value="Astana">Астана</option>
+        <option value="Shymkent">Шымкент</option>
+        <option value="Taraz">Тараз</option>
+        <option value="Aktau">Ақтау</option>
+        <option value="Atyrau">Атырау</option>
+        <option value="Aktobe">Ақтөбе</option>
+        <option value="Oral">Орал</option>
+        <option value="Kostanay">Қостанай</option>
+        <option value="Pavlodar">Павлодар</option>
+        <option value="Semey">Семей</option>
+        <option value="Oskemen">Өскемен</option>
+        <option value="Kyzylorda">Қызылорда</option>
+        <option value="Petropavl">Петропавл</option>
+        <option value="Kokshetau">Көкшетау</option>
+        <option value="Taldykorgan">Талдықорған</option>
+        <option value="Turkistan">Түркістан</option>
+        <option value="Zhezkazgan">Жезқазған</option>
+    </select>
+
+    <div style="overflow-x:auto;">
+        <table id="ramadanTable"
+            style="width:100%; border-collapse:collapse; background:white;
+            border-radius:15px; overflow:hidden;">
+            <thead style="background:var(--primary); color:white;">
+                <tr>
+                    <th>Күн</th>
+                    <th>Күні</th>
+                    <th>Сәресі</th>
+                    <th>Ифтар</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="info-card">
+        <b>Разбор:</b> Сәресі — таң намазына дейін, ифтар — күн батқан соң ашылады.
+    </div>
+</section>
+<script>
+async function loadRamadanCalendar() {
+    const city = document.getElementById("ramadanCity").value;
+    const year = new Date().getFullYear();
+    const tbody = document.querySelector("#ramadanTable tbody");
+
+    tbody.innerHTML = "<tr><td colspan='4'>Жүктелуде...</td></tr>";
+
+    try {
+        const res = await fetch(
+            `https://api.aladhan.com/v1/calendarByCity/${year}/3?city=${city}&country=Kazakhstan&method=2`
+        );
+        const data = await res.json();
+
+        tbody.innerHTML = "";
+        let dayNum = 1;
+
+        data.data.forEach(d => {
+            if (d.date.hijri.month.en === "Ramadan") {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${dayNum++}</td>
+                    <td>${d.date.gregorian.day}.${d.date.gregorian.month.number}</td>
+                    <td>${d.timings.Fajr}</td>
+                    <td>${d.timings.Maghrib}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        });
+
+        if (dayNum === 1) {
+            tbody.innerHTML =
+                "<tr><td colspan='4'>Бұл айда Рамазан жоқ</td></tr>";
+        }
+
+    } catch (e) {
+        tbody.innerHTML =
+            "<tr><td colspan='4'>Қате. Интернетті тексеріңіз.</td></tr>";
+    }
+}
+
+loadRamadanCalendar();
+</script>
+
+<script>
+async function loadSura(id, name) {
+    const contentDiv = document.getElementById('suraContent');
+    const display = document.getElementById('suraDisplay');
+    const title = document.getElementById('suraTitle');
+
+    title.innerText = "Жүктелуде...";
+    contentDiv.innerHTML = "Аяттар жүктелуде...";
+    display.style.display = "block";
+    document.getElementById('quranSuraMenu').style.display = "none";
+
+    try {
+        const res = await fetch(`https://api.alquran.cloud/v1/surah/${id}`);
+        const data = await res.json();
+
+        title.innerText = `${id}. ${name}`;
+        contentDiv.innerHTML = "";
+
+        data.data.ayahs.forEach(ayah => {
+            const div = document.createElement("div");
+            div.style.marginBottom = "25px";
+            div.style.borderBottom = "1px dashed #ccc";
+            div.style.paddingBottom = "15px";
+
+            div.innerHTML = `
+                <span class="arabic">${ayah.text}</span>
+
+                <audio controls style="width:100%; margin:10px 0;">
+                    <source src="https://cdn.islamic.network/quran/audio/128/ar.alafasy/${ayah.number}.mp3" type="audio/mpeg">
+                </audio>
+
+                <p style="font-size:14px;">
+                    <b>Қазақша мағынасы:</b><br>
+                    ${getKazakhAyah(ayah.number)}
+                </p>
+
+                <small style="color:#d4af37;">[${id}:${ayah.numberInSurah}]</small>
+            `;
+
+            contentDiv.appendChild(div);
+        });
+
+    } catch (e) {
+        contentDiv.innerHTML = "Қате шықты. Интернетті тексеріңіз.";
+    }
+}
+</script>
+<script>
+/* Қазақша Құран аудармасы (үлгі) */
+const kazakhQuran = {
+    1: "Аса рақымды, ерекше мейірімді Алланың атымен.",
+    2: "Барлық мақтау әлемдердің Раббысы Аллаға тән.",
+    3: "Ол – аса рақымды, ерекше мейірімді.",
+    4: "Қиямет күнінің Иесі.",
+    5: "Біз Саған ғана құлшылық етеміз әрі Сенен ғана жәрдем тілейміз.",
+    6: "Бізді тура жолға сала гөр.",
+    7: "Өздеріне нығмет берілгендердің жолына..."
+};
+
+function getKazakhAyah(num) {
+    return kazakhQuran[num] || "Бұл аяттың қазақша аудармасы кейін қосылады.";
+}
+</script>
+<style>
+.dark-mode {
+    background: #121212 !important;
+    color: #eee !important;
+}
+.dark-mode header {
+    background: #0a2920 !important;
+}
+.section-box {
+    background: white;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+.dark-mode .section-box {
+    background: #1e1e1e;
+}
+.arabic {
+    font-family:'Amiri', serif;
+    font-size: 22px;
+    display: block;
+    margin-bottom: 5px;
+    text-align: right;
+}
+.info-card {
+    background: #fff8e1;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 10px;
+    border-left: 4px solid #d4af37;
+    font-size: 14px;
+}
+.audio-player {
+    width: 100%;
+    margin-top: 10px;
+}
+</style>
+<!-- Түнгі режим батырмасы -->
+<button onclick="toggleDark()">🌙 Түнгі режим</button>
+
+<!-- Құран + аудио + мағына -->
+<div class="section-box">
+    <h2>📖 Құран оқу</h2>
+    <select id="suraSelect">
+        <option value="1">1. Фатиха</option>
+        <option value="2">2. Бақара (1-аят)</option>
+    </select>
+    <button onclick="loadAyah()">Көрсету</button>
+    <div id="ayahDisplay" style="margin-top:15px;">
+        <div class="arabic" id="ayahText">---</div>
+        <audio id="ayahAudio" class="audio-player" controls src=""></audio>
+        <div id="ayahMeaning" style="margin-top:10px;">---</div>
+    </div>
+</div>
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <title>Намаз және Құран аяттары</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; background: #f9f9f9; }
+        h1,h2,h3 { color: #2a3f54; }
+        .namaz, .quran { background: #fff; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
+        ol { padding-left: 20px; }
+        audio { width: 100%; margin-top: 5px; }
+        .ayah { margin-bottom: 15px; }
+        .arabic { font-size: 20px; direction: rtl; text-align: right; }
+        .meaning { color: #333; }
+    </style>
+</head>
+<body>
+
+<h1>🕌 Намаз тәртібі және Құран аяттары</h1>
+
+<!-- Намаздар -->
+<div class="namaz">
+    <h2>1️⃣ Жұма намаз (2 ракағат)</h2>
+    <ol>
+        <li>Ниет ету</li>
+        <li>Құтпа уағыз тыңдау</li>
+        <li>1 ракағат: Фатиха + қысқа сүре (Ихлас)</li>
+        <li>2 ракағат: Фатиха + қысқа сүре (Фәләк)</li>
+    </ol>
+</div>
+
+<div class="namaz">
+    <h2>2️⃣ Тарауһ намаз (8 ракағат, нафил)</h2>
+    <ol>
+        <li>Ниет ету</li>
+        <li>1-8 ракағат: Фатиха + қысқа сүрелер (Ихлас, Фәләк, Нас)</li>
+        <li>Қосымша дұғалар мен зикрлер</li>
+    </ol>
+</div>
+
+<div class="namaz">
+    <h2>3️⃣ Тахажуд намаз (2 ракағат, түнгі намаз)</h2>
+    <ol>
+        <li>Түнде оянып ниет ету</li>
+        <li>1-2 ракағат: Фатиха + қысқа сүрелер (Ихлас, Фәләк, Нас)</li>
+        <li>Қосымша дұғалар мен зикрлер</li>
+    </ol>
+</div>
+
+<!-- Құран -->
+<div class="quran">
+    <h2>📖 Құран аяттары</h2>
+
+    <!-- Фатиха -->
+    <div class="ayah">
+        <div class="arabic">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</div>
+        <div class="meaning">Рахман және Рахим Алланың атымен</div>
+        <audio controls>
+            <source src="https://everyayah.com/data/Al-Fatiha/001.mp3" type="audio/mpeg">
+            Сіздің браузеріңіз аудионы қолдамайды.
+        </audio>
+    </div>
+
+    <div class="ayah">
+        <div class="arabic">الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ</div>
+        <div class="meaning">Әлемдердің Раббысы Аллаға мадақ</div>
+        <audio controls>
+            <source src="https://everyayah.com/data/Al-Fatiha/002.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <div class="ayah">
+        <div class="arabic">الرَّحْمَنِ الرَّحِيمِ</div>
+        <div class="meaning">Рахман және Рахим</div>
+        <audio controls>
+            <source src="https://everyayah.com/data/Al-Fatiha/003.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <div class="ayah">
+        <div class="arabic">مَالِكِ يَوْمِ الدِّينِ</div>
+        <div class="meaning">Қиямет күнінің иесі</div>
+        <audio controls>
+            <source src="https://everyayah.com/data/Al-Fatiha/004.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <div class="ayah">
+        <div class="arabic">إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ</div>
+        <div class="meaning">Сенен басқа ғибадат етпейміз, тек Саған көмек тілейміз</div>
+        <audio controls>
+            <source src="https://everyayah.com/data/Al-Fatiha/005.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <!-- Қысқа сүрелер -->
+    <div class="ayah">
+        <div class="arabic">قُلْ هُوَ اللَّهُ أَحَدٌ</div>
+        <div class="meaning">Айт: Ол Алла – Бірегей</div>
+        <audio controls>
+            <source src="https://everyayah.com/data/Al-Ikhlas/001.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <div class="ayah">
+        <div class="arabic">قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ</div>
+        <div class="meaning">Айт: Таңның Раббысына жанымды паналаймын</div>
+        <audio controls>
+            <source src="https://everyayah.com/data/Al-Falaq/001.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <div class="ayah">
+        <div class="arabic">قُلْ أَعُوذُ بِرَبِّ النَّاسِ</div>
+        <div class="meaning">Айт: Адамдардың Раббысына жанымды паналаймын</div>
+        <audio controls>
+            <source src="https://everyayah.com/data/An-Nas/001.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+</div>
+
+</body>
+</html>
+
+<!-- Намаз тәртібі -->
+<div class="section-box">
+    <h2>🕌 Намаз оқу тәртібі</h2>
+    <button onclick="showNamaz('jumaa')">Жұма намаз</button>
+    <button onclick="showNamaz('tarawih')">Тарауһ намаз</button>
+    <button onclick="showNamaz('tahajjud')">Тахажуд намаз</button>
+    <div id="namazBox" style="margin-top:10px; display:none;">
+        <h3 id="namazTitle"></h3>
+        <div id="namazSteps"></div>
+    </div>
+</div>
+
+<!-- Намаз міндеттілігі -->
+<div class="section-box">
+    <h2>❗ Неге намаз оқу міндетті?</h2>
+    <p>Намаз — Ислам дінінің 5 парызынан бірі. Ол:
+    <ul>
+        <li>Мұсылманның Аллаға бағынуын көрсетеді</li>
+        <li>Жүректі тазартады, рухты нығайтады</li>
+        <li>Күнделікті тәртіп пен сананы реттейді</li>
+        <li>Жәннатқа жетелейтін амалдардың бірі</li>
+    </ul>
+    </p>
+</div>
+<script>
+// Түнгі режим
+function toggleDark() {
+    document.body.classList.toggle('dark-mode');
+}
+
+// Құран аяттары (мысал)
+const ayahs = {
+    "1": {text:"بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ", meaning:"Рахман және Рахим Алланың атымен", audio:"https://www.islamic-audio.com/fatiha.mp3"},
+    "2": {text:"الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ", meaning:"Әлемдердің Раббысы Аллаға мадақ", audio:"https://www.islamic-audio.com/bakara1.mp3"}
+};
+
+function loadAyah(){
+    const sura = document.getElementById('suraSelect').value;
+    document.getElementById('ayahText').innerText = ayahs[sura].text;
+    document.getElementById('ayahAudio').src = ayahs[sura].audio;
+    document.getElementById('ayahMeaning').innerText = ayahs[sura].meaning;
+}
+
+// Намаз оқу
+function showNamaz(type){
+    const box = document.getElementById('namazBox');
+    const title = document.getElementById('namazTitle');
+    const steps = document.getElementById('namazSteps');
+    box.style.display='block';
+
+    if(type==='jumaa'){
+        title.innerText='Жұма намаздың тәртібі';
+        steps.innerHTML=`<ol>
+        <li>Ниет ету</li>
+        <li>Құтпы уағыз тыңдау</li>
+        <li>Жұма намазын оқу (2 ракағат)</li>
+        </ol>`;
+    }else if(type==='tarawih'){
+        title.innerText='Тарауһ намаздың тәртібі';
+        steps.innerHTML=`<ol>
+        <li>Ниет ету</li>
+        <li>Тарауһ намазын 8-20 ракағатқа дейін оқу</li>
+        <li>Қосымша дұғалар</li>
+        </ol>`;
+    }else if(type==='tahajjud'){
+        title.innerText='Тахажуд намаздың тәртібі';
+        steps.innerHTML=`<ol>
+        <li>Түнде оянып ниет ету</li>
+        <li>2 ракағаттан 8 ракағатқа дейін оқу</li>
+        <li>Қосымша дұғалар мен зикрлер</li>
+        </ol>`;
+    } маган осы кодка разбор жасап бершы толык 50 бет а 4 шыгатындай теория болсыншы калай жасалды немен жасалды ышынде не бар деген секылды
